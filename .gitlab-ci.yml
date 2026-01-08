@@ -13,7 +13,7 @@ test:
   stage: test
   before_script:
     - apt-get update -y
-    - apt-get install -y git unzip libzip-dev sqlite3
+    - apt-get install -y git unzip libzip-dev sqlite3 libsqlite3-dev
     - docker-php-ext-install zip pdo_sqlite
     - pecl install pcov
     - docker-php-ext-enable pcov
