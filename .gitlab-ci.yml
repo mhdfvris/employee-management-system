@@ -1,6 +1,8 @@
 image: php:8.3-cli
 
-stages: [test]
+stages:
+  - build
+  - test
 
 variables:
   APP_ENV: testing
@@ -9,21 +11,49 @@ variables:
   SESSION_DRIVER: array
   QUEUE_CONNECTION: sync
 
-test:
-  stage: test
+# Optional but recommended: speeds up composer install across pipelines
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - vendor/
+    - .composer-cache/
+
+build:
+  stage: build
   before_script:
     - apt-get update -y
-    - apt-get install -y git unzip libzip-dev sqlite3 libsqlite3-dev
+    - apt-get install -y git unzip libzip-dev
+    - docker-php-ext-install zip
+
+    - curl -sS https://getcomposer.org/installer | php
+    - mv composer.phar /usr/local/bin/composer
+    - composer config cache-files-dir .composer-cache
+
+  script:
+    - composer install --no-interaction --prefer-dist --no-progress
+    - php -v
+    - composer --version
+
+  artifacts:
+    expire_in: 1 hour
+    paths:
+      - vendor/
+      - composer.lock
+
+test:
+  stage: test
+  needs: ["build"]   # downloads artifacts from build job (vendor/)
+  before_script:
+    - apt-get update -y
+    - apt-get install -y unzip libzip-dev sqlite3 libsqlite3-dev
     - docker-php-ext-install zip pdo_sqlite
+
     - pecl install pcov
     - docker-php-ext-enable pcov
     - echo "pcov.enabled=1" > /usr/local/etc/php/conf.d/pcov.ini
     - php -m | grep -i -E "pcov|pdo_sqlite"
 
-    - curl -sS https://getcomposer.org/installer | php
-    - mv composer.phar /usr/local/bin/composer
-    - composer install --no-interaction --prefer-dist
-
+    # Ensure env file exists for testing
     - cp .env.example .env.testing
     - php artisan key:generate --env=testing
 
