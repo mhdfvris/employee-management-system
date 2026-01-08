@@ -40,17 +40,12 @@ tests:
 
   before_script:
     - apt-get update -y
-    - apt-get install -y git unzip libzip-dev
-    - docker-php-ext-install zip pdo_pgsql
-    - curl -sS https://getcomposer.org/installer | php
-    - mv composer.phar /usr/local/bin/composer
-    - composer install --no-interaction --prefer-dist
-    - cp .env.testing .env
-    - php artisan key:generate --env=testing
-    - php artisan migrate --env=testing --force
-
+    - apt-get install -y $PHPIZE_DEPS
+    - pecl install pcov
+    - docker-php-ext-enable pcov
+    - php -m | grep -i pcov
   script:
-    - phpdbg -qrr artisan test --env=testing --coverage
+    - php -d pcov.enabled=1 artisan test --env=testing --coverage
 
   artifacts:
     when: always
