@@ -1,7 +1,6 @@
 image: php:8.3-cli
 
-stages:
-  - test
+stages: [test]
 
 variables:
   APP_ENV: testing
@@ -19,30 +18,22 @@ test:
     - pecl install pcov
     - docker-php-ext-enable pcov
     - echo "pcov.enabled=1" > /usr/local/etc/php/conf.d/pcov.ini
-    - php -m | grep -i pcov
+    - php -m | grep -i -E "pcov|pdo_sqlite"
 
     - curl -sS https://getcomposer.org/installer | php
     - mv composer.phar /usr/local/bin/composer
     - composer install --no-interaction --prefer-dist
 
-    # create .env.testing on the fly
     - cp .env.example .env.testing
     - php artisan key:generate --env=testing
 
-    # ensure sqlite db file exists (if you choose file-based)
-    - mkdir -p database
+    - mkdir -p database storage/test-results
     - touch database/database.sqlite
 
   script:
-    # Force sqlite for tests
     - export DB_CONNECTION=sqlite
     - export DB_DATABASE=$(pwd)/database/database.sqlite
-
-    # If your tests require DB tables:
     - php artisan migrate --env=testing --force
-
-    # Run tests + coverage + junit file
-    - mkdir -p storage/test-results
     - php -d pcov.enabled=1 artisan test --env=testing --coverage --log-junit storage/test-results/junit.xml
 
   artifacts:
