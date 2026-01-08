@@ -7,13 +7,15 @@ stages:
 before_script:
   - apt-get update -y
   - apt-get install -y git unzip libzip-dev
-  - docker-php-ext-install zip pdo pdo_mysql
+  - docker-php-ext-install zip
   - pecl install pcov
   - docker-php-ext-enable pcov
+  - echo "pcov.enabled=1" > /usr/local/etc/php/conf.d/pcov.ini
+  - echo "pcov.directory=." >> /usr/local/etc/php/conf.d/pcov.ini
+  - php -m | grep -i pcov
   - curl -sS https://getcomposer.org/installer | php
   - mv composer.phar /usr/local/bin/composer
   - composer install --no-interaction --prefer-dist
-  - cp .env.testing.example .env.testing || true
   - php artisan key:generate --env=testing
 
 build:
@@ -24,5 +26,5 @@ build:
 tests:
   stage: test
   script:
-    - php artisan test --env=testing --coverage
+    - php -d pcov.enabled=1  artisan test --env=testing --coverage
 
