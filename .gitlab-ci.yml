@@ -25,6 +25,37 @@ build:
 
 tests:
   stage: test
+  image: php:8.3-cli
+  services:
+    - name: postgres:16
+      alias: postgres
+
+  variables:
+    DB_CONNECTION: pgsql
+    DB_HOST: postgres
+    DB_PORT: 5432
+    DB_DATABASE: employee_task_tracker_test
+    DB_USERNAME: postgres
+    DB_PASSWORD: postgres
+
+  before_script:
+    - apt-get update -y
+    - apt-get install -y git unzip libzip-dev
+    - docker-php-ext-install zip pdo_pgsql
+    - curl -sS https://getcomposer.org/installer | php
+    - mv composer.phar /usr/local/bin/composer
+    - composer install --no-interaction --prefer-dist
+    - cp .env.testing .env
+    - php artisan key:generate --env=testing
+    - php artisan migrate --env=testing --force
+
   script:
-    - php -d pcov.enabled=1  artisan test --env=testing --coverage
+    - phpdbg -qrr artisan test --env=testing --coverage
+
+  artifacts:
+    when: always
+    reports:
+      junit: storage/test-results/junit.xml
+    paths:
+      - storage/logs
 
