@@ -1,51 +1,49 @@
-image: php:8.3
+image: php:8.3-cli
 
 stages:
-  - build
   - test
 
-before_script:
-  - apt-get update -y
-  - apt-get install -y git unzip libzip-dev
-  - docker-php-ext-install zip
-  - pecl install pcov
-  - docker-php-ext-enable pcov
-  - echo "pcov.enabled=1" > /usr/local/etc/php/conf.d/pcov.ini
-  - echo "pcov.directory=." >> /usr/local/etc/php/conf.d/pcov.ini
-  - php -m | grep -i pcov
-  - curl -sS https://getcomposer.org/installer | php
-  - mv composer.phar /usr/local/bin/composer
-  - composer install --no-interaction --prefer-dist
-  - php artisan key:generate --env=testing
+variables:
+  APP_ENV: testing
+  APP_DEBUG: "true"
+  CACHE_DRIVER: array
+  SESSION_DRIVER: array
+  QUEUE_CONNECTION: sync
 
-build:
-  stage: build
-  script:
-    - echo "Build stage completed successfully"
-
-tests:
+test:
   stage: test
-  image: php:8.3-cli
-  services:
-    - name: postgres:16
-      alias: postgres
-
-  variables:
-    DB_CONNECTION: pgsql
-    DB_HOST: postgres
-    DB_PORT: 5432
-    DB_DATABASE: employee_task_tracker_test
-    DB_USERNAME: postgres
-    DB_PASSWORD: postgres
-
   before_script:
     - apt-get update -y
-    - apt-get install -y $PHPIZE_DEPS
+    - apt-get install -y git unzip libzip-dev sqlite3
+    - docker-php-ext-install zip pdo_sqlite
     - pecl install pcov
     - docker-php-ext-enable pcov
+    - echo "pcov.enabled=1" > /usr/local/etc/php/conf.d/pcov.ini
     - php -m | grep -i pcov
+
+    - curl -sS https://getcomposer.org/installer | php
+    - mv composer.phar /usr/local/bin/composer
+    - composer install --no-interaction --prefer-dist
+
+    # create .env.testing on the fly
+    - cp .env.example .env.testing
+    - php artisan key:generate --env=testing
+
+    # ensure sqlite db file exists (if you choose file-based)
+    - mkdir -p database
+    - touch database/database.sqlite
+
   script:
-    - php -d pcov.enabled=1 artisan test --env=testing --coverage
+    # Force sqlite for tests
+    - export DB_CONNECTION=sqlite
+    - export DB_DATABASE=$(pwd)/database/database.sqlite
+
+    # If your tests require DB tables:
+    - php artisan migrate --env=testing --force
+
+    # Run tests + coverage + junit file
+    - mkdir -p storage/test-results
+    - php -d pcov.enabled=1 artisan test --env=testing --coverage --log-junit storage/test-results/junit.xml
 
   artifacts:
     when: always
@@ -53,4 +51,4 @@ tests:
       junit: storage/test-results/junit.xml
     paths:
       - storage/logs
-
+      - storage/test-results
