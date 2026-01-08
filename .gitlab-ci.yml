@@ -8,16 +8,18 @@ before_script:
   - apt-get update -y
   - apt-get install -y git unzip libzip-dev
   - docker-php-ext-install zip pdo pdo_mysql
+  - pecl install pcov
+  - docker-php-ext-enable pcov
   - curl -sS https://getcomposer.org/installer | php
   - mv composer.phar /usr/local/bin/composer
-  - composer install --no-interaction --prefer-dist --optimize-autoloader
+  - composer install --no-interaction --prefer-dist
   - cp .env.testing.example .env.testing || true
   - php artisan key:generate --env=testing
 
 build:
   stage: build
   script:
-    - echo "Build step completed"
+    - echo "Build stage completed successfully"
 
 tests:
   stage: test
