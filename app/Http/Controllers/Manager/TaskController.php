@@ -32,6 +32,23 @@ class TaskController extends Controller
     {
         $employees = User::where('role', 'employee')
             ->where('manager_id', auth()->id())
+            ->withCount([
+                'tasks',
+                'tasks as pending_tasks_count' => function ($query) {
+                    $query->where('status', 'pending');
+                },
+                'tasks as in_progress_tasks_count' => function ($query) {
+                    $query->where('status', 'in_progress');
+                },
+                'tasks as awaiting_review_tasks_count' => function ($query) {
+                    $query->where('status', 'awaiting_review');
+                },
+                'tasks as overdue_tasks_count' => function ($query) {
+                    $query->whereDate('due_date', '<', now()->toDateString())
+                          ->whereNotIn('status', ['done']);
+                },
+            ])
+            ->orderBy('tasks_count')
             ->orderBy('name')
             ->get();
 
@@ -75,9 +92,9 @@ class TaskController extends Controller
             ->where('manager_id', auth()->id())
             ->orderBy('name')
             ->get();
-        
+
         $task->load('reviews.manager');
-        
+
         return view('manager.tasks.show', compact('task', 'employees'));
     }
 

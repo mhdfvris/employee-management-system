@@ -81,12 +81,27 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/notifications', function () {
-        $notifications = auth()->user()->notifications()->latest()->get();
+    $notifications = auth()->user()->notifications()->latest()->paginate(10);
 
+    return view('notifications.index', compact('notifications'));
+    })->name('notifications.index');
+
+    Route::post('/notifications/mark-all-read', function () {
         auth()->user()->unreadNotifications->markAsRead();
 
-        return view('notifications.index', compact('notifications'));
-    })->name('notifications.index');
+        return redirect()->route('notifications.index')
+            ->with('success', 'All notifications marked as read.');
+    })->name('notifications.readAll');
+
+    Route::post('/notifications/{id}/read', function ($id) {
+        $notification = auth()->user()->notifications()->where('id', $id)->firstOrFail();
+
+        if (is_null($notification->read_at)) {
+            $notification->markAsRead();
+        }
+
+        return redirect()->route('notifications.index');
+    })->name('notifications.readOne');
 });
 
 

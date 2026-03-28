@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Fix browser autofill background and text color for dark inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #1e2546 inset !important; /* Tailwind blue-950 */
+    -webkit-text-fill-color: #c7d2fe !important; /* Tailwind blue-100 */
+    transition: background-color 5000s ease-in-out 0s;
+    box-shadow: 0 0 0 1000px #1e2546 inset !important;
+    color: #c7d2fe !important;
+}

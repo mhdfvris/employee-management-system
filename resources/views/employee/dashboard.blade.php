@@ -1,47 +1,42 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="text-2xl font-bold text-blue-200 tracking-tight">
             Employee Dashboard
         </h2>
     </x-slot>
 
-    <div class="py-6">
-        <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white shadow-sm sm:rounded-lg p-6">
-                <p class="text-gray-700 mb-4">My Task Overview</p>
+    <div class="py-12 bg-gradient-to-br from-gray-900 via-gray-800 to-blue-950 min-h-screen">
+        <div class="max-w-6xl mx-auto sm:px-8 lg:px-12">
+            <div class="rounded-3xl border-2 border-blue-900 bg-gray-900 shadow-2xl shadow-blue-900/30 p-14">
+                <p class="text-blue-200 mb-10 text-2xl font-bold tracking-wide text-center">My Task Overview</p>
 
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-
-                    <div class="bg-yellow-100 text-yellow-800 p-4 rounded text-center">
-                        <p class="text-sm">Pending</p>
-                        <p class="text-xl font-bold">{{ $stats['pending'] }}</p>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-10">
+                    <div class="rounded-2xl border border-yellow-900 bg-gradient-to-br from-yellow-900/80 to-gray-900 p-6 shadow shadow-yellow-900/20 text-center">
+                        <p class="text-base font-semibold text-yellow-200">Pending</p>
+                        <p class="text-3xl font-extrabold text-yellow-100">{{ $stats['pending'] }}</p>
                     </div>
-
-                    <div class="bg-blue-100 text-blue-800 p-4 rounded text-center">
-                        <p class="text-sm">In Progress</p>
-                        <p class="text-xl font-bold">{{ $stats['in_progress'] }}</p>
+                    <div class="rounded-2xl border border-blue-900 bg-gradient-to-br from-blue-900/80 to-gray-900 p-6 shadow shadow-blue-900/20 text-center">
+                        <p class="text-base font-semibold text-blue-200">In Progress</p>
+                        <p class="text-3xl font-extrabold text-blue-100">{{ $stats['in_progress'] }}</p>
                     </div>
-
-                    <div class="bg-purple-100 text-purple-800 p-4 rounded text-center">
-                        <p class="text-sm">Awaiting Review</p>
-                        <p class="text-xl font-bold">{{ $stats['awaiting_review'] }}</p>
+                    <div class="rounded-2xl border border-purple-900 bg-gradient-to-br from-purple-900/80 to-gray-900 p-6 shadow shadow-purple-900/20 text-center">
+                        <p class="text-base font-semibold text-purple-200">Awaiting Review</p>
+                        <p class="text-3xl font-extrabold text-purple-100">{{ $stats['awaiting_review'] }}</p>
                     </div>
-
-                    <div class="bg-red-100 text-red-800 p-4 rounded text-center">
-                        <p class="text-sm">Overdue</p>
-                        <p class="text-xl font-bold">{{ $stats['overdue'] }}</p>
+                    <div class="rounded-2xl border border-red-900 bg-gradient-to-br from-red-900/80 to-gray-900 p-6 shadow shadow-red-900/20 text-center">
+                        <p class="text-base font-semibold text-red-200">Overdue</p>
+                        <p class="text-3xl font-extrabold text-red-100">{{ $stats['overdue'] }}</p>
                     </div>
-
-                    <div class="bg-green-100 text-green-800 p-4 rounded text-center">
-                        <p class="text-sm">Done</p>
-                        <p class="text-xl font-bold">{{ $stats['done'] }}</p>
+                    <div class="rounded-2xl border border-emerald-900 bg-gradient-to-br from-emerald-900/80 to-gray-900 p-6 shadow shadow-emerald-900/20 text-center">
+                        <p class="text-base font-semibold text-emerald-200">Done</p>
+                        <p class="text-3xl font-extrabold text-emerald-100">{{ $stats['done'] }}</p>
                     </div>
-
                 </div>
 
-                <div class="mt-6">
+                <div class="mt-12 flex justify-center">
                     <a href="{{ route('tasks.index') }}"
-                    class="inline-block bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                       class="inline-flex items-center rounded-2xl bg-gradient-to-r from-indigo-500 via-blue-600 to-indigo-700 px-10 py-4 text-lg font-bold text-white shadow-xl shadow-indigo-900/30 transition hover:from-indigo-600 hover:to-blue-800">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                         View My Tasks
                     </a>
                 </div>

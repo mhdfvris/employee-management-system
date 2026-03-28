@@ -12,11 +12,22 @@ class EmployeeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $employees = User::where('role', 'employee')
-            ->where('manager_id', auth()->id())
-            ->get();
+        $query = User::where('role', 'employee')
+            ->where('manager_id', auth()->id());
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('employee_id', 'like', "%{$search}%");
+            });
+        }
+
+        $employees = $query->latest()->paginate(8)->withQueryString();
 
         return view('manager.employees.index', compact('employees'));
     }
@@ -58,9 +69,31 @@ class EmployeeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(User $user)
+    public function show(User $employee)
     {
-        //
+        $this->ensureEmployeeBelongsToManager($employee);
+
+        $employee->load([
+            'tasks' => function ($query) {
+                $query->latest();
+            }
+        ]);
+
+        $tasks = $employee->tasks()->latest()->paginate(6);
+
+        $stats = [
+            'total' => $employee->tasks()->count(),
+            'pending' => $employee->tasks()->where('status', 'pending')->count(),
+            'in_progress' => $employee->tasks()->where('status', 'in_progress')->count(),
+            'awaiting_review' => $employee->tasks()->where('status', 'awaiting_review')->count(),
+            'done' => $employee->tasks()->where('status', 'done')->count(),
+            'overdue' => $employee->tasks()
+                ->whereDate('due_date', '<', now()->toDateString())
+                ->whereNotIn('status', ['done'])
+                ->count(),
+        ];
+
+        return view('manager.employees.show', compact('employee', 'tasks', 'stats'));
     }
 
     /**
@@ -69,7 +102,6 @@ class EmployeeController extends Controller
     public function edit(User $employee)
     {
         $this->ensureEmployeeBelongsToManager($employee);
-
 
         return view('manager.employees.edit', compact('employee'));
     }
@@ -81,7 +113,6 @@ class EmployeeController extends Controller
     {
         $this->ensureEmployeeBelongsToManager($employee);
 
-        
         $data = $request->validate([
             'name'        => 'required|string|max:255',
             'email'       => 'required|email|unique:users,email,' . $employee->id,
@@ -100,7 +131,7 @@ class EmployeeController extends Controller
     public function destroy(User $employee)
     {
         $this->ensureEmployeeBelongsToManager($employee);
-        
+
         $employee->delete();
 
         return redirect()->route('manager.employees.index')
@@ -116,5 +147,4 @@ class EmployeeController extends Controller
             abort(403);
         }
     }
-
 }
