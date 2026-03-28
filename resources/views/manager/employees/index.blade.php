@@ -27,17 +27,18 @@
                 <div class="p-6">
 
                     <!-- 🔍 SEARCH -->
-                    <form method="GET" class="mb-6 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-                        <input type="text"
-                               name="search"
-                               value="{{ request('search') }}"
-                               placeholder="Search by name, email, or ID..."
-                               class="w-full md:w-80 px-4 py-2 rounded-lg bg-gray-800 border border-blue-900 text-blue-100 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
-
-                        <button type="submit"
-                                class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition">
-                            Search
-                        </button>
+                    <form method="GET" class="mb-6 flex flex-col md:flex-row gap-3 md:items-center md:justify-start">
+                        <div class="flex gap-2 w-full md:w-auto">
+                            <input type="text"
+                                   name="search"
+                                   value="{{ request('search') }}"
+                                   placeholder="Search by name, email, or ID..."
+                                   class="w-full md:w-80 px-4 py-2 rounded-lg bg-gray-800 border border-blue-900 text-blue-100 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button type="submit"
+                                    class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition">
+                                Search
+                            </button>
+                        </div>
                     </form>
 
                     <!-- ERROR MODAL -->

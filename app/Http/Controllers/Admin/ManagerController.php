@@ -4,17 +4,34 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class ManagerController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $managers = User::where('role', 'manager')
-            ->withCount('employees','managedTasks')
-            ->orderBy('name')
-            ->get();
+        $query = User::where('role', 'manager')
+            ->withCount(['employees', 'managedTasks']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ILIKE', "%{$search}%")
+                  ->orWhere('email', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        if ($request->filter === 'has_employees') {
+            $query->has('employees');
+        }
+
+        if ($request->filter === 'no_employees') {
+            $query->doesntHave('employees');
+        }
+
+        $managers = $query->orderBy('name')->get();
 
         return view('admin.managers.index', compact('managers'));
     }
@@ -45,6 +62,46 @@ class ManagerController extends Controller
             ->with('success', 'Manager created.');
     }
 
+    public function show(User $manager)
+    {
+        if ($manager->role !== 'manager') {
+            abort(404);
+        }
+
+        $manager->loadCount([
+            'employees',
+            'managedTasks',
+            'managedTasks as done_tasks_count' => function ($query) {
+                $query->where('status', 'done');
+            },
+            'managedTasks as pending_tasks_count' => function ($query) {
+                $query->where('status', 'pending');
+            },
+            'managedTasks as in_progress_tasks_count' => function ($query) {
+                $query->where('status', 'in_progress');
+            },
+            'managedTasks as awaiting_review_tasks_count' => function ($query) {
+                $query->where('status', 'awaiting_review');
+            },
+            'managedTasks as overdue_tasks_count' => function ($query) {
+                $query->whereDate('due_date', '<', now()->toDateString())
+                      ->whereNotIn('status', ['done']);
+            },
+        ]);
+
+        $employees = $manager->employees()
+            ->orderBy('name')
+            ->get();
+
+        $recentTasks = Task::with('user')
+            ->whereIn('user_id', $manager->employees()->pluck('id'))
+            ->latest()
+            ->take(6)
+            ->get();
+
+        return view('admin.managers.show', compact('manager', 'employees', 'recentTasks'));
+    }
+
     public function edit(User $manager)
     {
         return view('admin.managers.edit', compact('manager'));
@@ -71,16 +128,16 @@ class ManagerController extends Controller
                 ->route('admin.managers.index')
                 ->with('error', 'Cannot delete manager with assigned employees. Reassign employees first');
         }
-        
+
         $manager->delete();
 
         return redirect()
             ->route('admin.managers.index')
             ->with('success', 'Manager deleted.');
     }
+
     public function showReassign(User $manager)
     {
-        // Safety: ensure this really is a manager
         if ($manager->role !== 'manager') {
             abort(404);
         }
@@ -89,10 +146,20 @@ class ManagerController extends Controller
 
         $otherManagers = User::where('role', 'manager')
             ->where('id', '!=', $manager->id)
+            ->withCount(['employees', 'managedTasks'])
+            ->orderBy('employees_count')
+            ->orderBy('managed_tasks_count')
             ->orderBy('name')
             ->get();
 
-        return view('admin.managers.reassign', compact('manager', 'employees', 'otherManagers'));
+        $recommendedManager = $otherManagers->first();
+
+        return view('admin.managers.reassign', compact(
+            'manager',
+            'employees',
+            'otherManagers',
+            'recommendedManager'
+        ));
     }
 
     public function storeReassign(Request $request, User $manager)
@@ -105,14 +172,12 @@ class ManagerController extends Controller
             'new_manager_id' => 'required|exists:users,id',
         ]);
 
-        // Extra safety: new manager must actually be a manager and not same as current
         $newManager = User::where('role', 'manager')->findOrFail($data['new_manager_id']);
 
         if ($newManager->id === $manager->id) {
             return back()->with('error', 'Please choose a different manager.');
         }
 
-        // Move all employees
         $manager->employees()->update([
             'manager_id' => $newManager->id,
         ]);

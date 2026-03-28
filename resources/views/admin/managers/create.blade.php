@@ -1,48 +1,48 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="text-2xl font-bold text-blue-200 tracking-tight">
             Create Manager (Admin)
         </h2>
     </x-slot>
 
-    <div class="py-6">
+    <div class="py-10 bg-gradient-to-br from-gray-900 via-gray-800 to-blue-950 min-h-screen">
         <div class="max-w-md mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white shadow-sm sm:rounded-lg p-6">
+            <div class="rounded-2xl border border-blue-900 bg-gray-900 shadow-xl shadow-blue-900/20 p-10">
                 <form method="POST" action="{{ route('admin.managers.store') }}">
                     @csrf
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <div class="mb-8">
+                        <label class="block text-base font-semibold text-blue-200 mb-2">Name</label>
                         <input type="text" name="name" value="{{ old('name') }}"
-                               class="w-full border rounded px-3 py-2 text-sm">
+                               class="w-full border border-blue-800 bg-blue-950 text-blue-100 rounded px-4 py-3 text-base focus:border-blue-500 focus:ring focus:ring-blue-500/30">
                         @error('name')
-                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <div class="mb-8">
+                        <label class="block text-base font-semibold text-blue-200 mb-2">Email</label>
                         <input type="email" name="email" value="{{ old('email') }}"
-                               class="w-full border rounded px-3 py-2 text-sm">
+                               class="w-full border border-blue-800 bg-blue-950 text-blue-100 rounded px-4 py-3 text-base focus:border-blue-500 focus:ring focus:ring-blue-500/30">
                         @error('email')
-                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <div class="mb-10">
+                        <label class="block text-base font-semibold text-blue-200 mb-2">Password</label>
                         <input type="password" name="password"
-                               class="w-full border rounded px-3 py-2 text-sm">
+                               class="w-full border border-blue-800 bg-blue-950 text-blue-100 rounded px-4 py-3 text-base focus:border-blue-500 focus:ring focus:ring-blue-500/30">
                         @error('password')
-                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <div class="flex justify-between">
-                        <a href="{{ route('admin.managers.index') }}" class="text-gray-600 text-sm">
-                            ← Back
+                    <div class="flex justify-between items-center mt-8">
+                        <a href="{{ route('admin.managers.index') }}" class="inline-flex items-center rounded-lg bg-blue-950 px-4 py-2 text-base font-medium text-blue-200 transition hover:bg-blue-900 hover:text-white">
+                            Go back
                         </a>
-                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 text-sm rounded">
+                            <button type="submit" class="inline-flex items-center rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:from-blue-600 hover:to-indigo-700">
                             Create Manager
                         </button>
                     </div>
