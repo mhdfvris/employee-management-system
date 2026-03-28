@@ -14,8 +14,9 @@ class CheckDueTasks extends Command
 
     public function handle(): int
     {
-        $tasks = Task::whereDate('due_date', '<', now()->toDateString())
-            ->whereIn('status', ['pending', 'in_progress']) // only these should become overdue
+        $tasks = Task::with(['user.manager']) 
+            ->whereDate('due_date', '<', now()->toDateString())
+            ->whereIn('status', ['pending', 'in_progress'])
             ->get();
 
         $count = 0;
@@ -24,14 +25,9 @@ class CheckDueTasks extends Command
             $task->status = 'overdue';
             $task->save();
 
-            $task->load('user');
             
-            if ($task->user && $task->user->manager_id) {
-                $manager = User::find($task->user->manager_id);
-
-                if ($manager) {
-                    $manager->notify(new TaskOverdue($task));
-                }
+            if ($task->user && $task->user->manager) {
+                $task->user->manager->notify(new TaskOverdue($task));
             }
 
             $task->logActivity('marked_overdue', [
@@ -44,7 +40,6 @@ class CheckDueTasks extends Command
         }
 
         $this->info("Marked {$count} tasks as overdue.");
-
         return self::SUCCESS;
     }
 }
