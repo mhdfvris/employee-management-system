@@ -11,14 +11,27 @@ class DashboardController extends Controller
     {
         $userId = auth()->id();
 
+        $taskQuery = Task::where('user_id', $userId);
+
         $stats = [
-            'pending' => Task::where('user_id', $userId)->where('status', 'pending')->count(),
-            'in_progress' => Task::where('user_id', $userId)->where('status', 'in_progress')->count(),
-            'awaiting_review' => Task::where('user_id', $userId)->where('status', 'awaiting_review')->count(),
-            'overdue' => Task::where('user_id', $userId)->where('status', 'overdue')->count(),
-            'done' => Task::where('user_id', $userId)->where('status', 'done')->count(),
+            'pending' => (clone $taskQuery)->where('status', 'pending')->count(),
+            'in_progress' => (clone $taskQuery)->where('status', 'in_progress')->count(),
+            'awaiting_review' => (clone $taskQuery)->where('status', 'awaiting_review')->count(),
+            'overdue' => (clone $taskQuery)
+                ->whereDate('due_date', '<', now()->toDateString())
+                ->whereNotIn('status', ['done'])
+                ->count(),
+            'done' => (clone $taskQuery)->where('status', 'done')->count(),
+            'total' => (clone $taskQuery)->count(),
         ];
 
-        return view('employee.dashboard', compact('stats'));
+        $upcomingTasks = Task::where('user_id', $userId)
+            ->whereNotIn('status', ['done'])
+            ->whereDate('due_date', '>=', now()->toDateString())
+            ->orderBy('due_date')
+            ->take(5)
+            ->get();
+
+        return view('employee.dashboard', compact('stats', 'upcomingTasks'));
     }
 }

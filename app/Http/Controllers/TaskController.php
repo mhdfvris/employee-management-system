@@ -12,12 +12,31 @@ class TaskController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $tasks = auth()->user()
+        $query = auth()->user()
             ->tasks()
-            ->orderBy('due_date', 'asc')
-            ->get();
+            ->orderBy('due_date', 'asc');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            if ($request->status === 'overdue') {
+                $query->whereDate('due_date', '<', now()->toDateString())
+                    ->whereNotIn('status', ['done']);
+            } else {
+                $query->where('status', $request->status);
+            }
+        }
+
+        $tasks = $query->paginate(8)->withQueryString();
 
         return view('tasks.index', compact('tasks'));
     }
@@ -61,7 +80,13 @@ class TaskController extends Controller
      */
     public function show(Task $task)
     {
-        //
+        if ($task->user_id !== auth()->id()) {
+        abort(403);
+        }
+
+        $task->load(['reviews.manager', 'activities']);
+
+        return view('tasks.show', compact('task'));
     }
 
     /**
@@ -69,10 +94,10 @@ class TaskController extends Controller
      */
     public function edit(Task $task)
     {
-        // Ensure user is editing their own task
         if ($task->user_id !== auth()->id()) {
             abort(403, 'Unauthorized');
         }
+
         $this->ensureTaskIsEditable($task);
 
         $task->load('reviews.manager');
@@ -88,7 +113,7 @@ class TaskController extends Controller
         if ($task->user_id !== auth()->id()) {
             abort(403, 'Unauthorized');
         }
-        
+
         $this->ensureTaskIsEditable($task);
 
         $data = $request->validate([
@@ -104,7 +129,6 @@ class TaskController extends Controller
 
         $after = $task->only(['title', 'description', 'status', 'due_date']);
 
-        // Notify manager when employee submits for review
         if (($before['status'] ?? null) !== 'awaiting_review' && ($after['status'] ?? null) === 'awaiting_review') {
             $employee = auth()->user();
 
@@ -127,7 +151,10 @@ class TaskController extends Controller
 
     private function ensureTaskIsEditable(Task $task): void
     {
-        if ($task->status === 'overdue') {
+        if (
+            $task->status === 'overdue' ||
+            ($task->due_date && now()->toDateString() > $task->due_date && $task->status !== 'done')
+        ) {
             abort(403, 'This task is overdue and cannot be edited.');
         }
     }
@@ -139,13 +166,13 @@ class TaskController extends Controller
         }
 
         $this->ensureTaskIsEditable($task);
-        
+
         $task->logActivity('deleted', [
             'title' => $task->title,
             'status' => $task->status,
             'due_date' => $task->due_date,
         ]);
-        
+
         $task->delete();
 
         return redirect()->route('tasks.index')->with('success', 'Task deleted.');
