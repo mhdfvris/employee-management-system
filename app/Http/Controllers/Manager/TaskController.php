@@ -7,6 +7,7 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\TaskReview;
+use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
@@ -61,14 +62,29 @@ class TaskController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'user_id'     => 'required|exists:users,id',
+            'user_id' => [
+                'required',
+                Rule::exists('users', 'id')->where(function ($query) {
+                    $query->where('role', 'employee')
+                          ->where('manager_id', auth()->id());
+                }),
+            ],
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
             'status'      => 'required|string|in:pending,in_progress,awaiting_review,done,overdue',
             'due_date'    => 'required|date',
         ]);
 
-        $task = Task::create($data);
+        // Extra defensive check
+        $employee = $this->getManagedEmployeeOrAbort((int) $data['user_id']);
+
+        $task = Task::create([
+            'user_id'     => $employee->id,
+            'title'       => $data['title'],
+            'description' => $data['description'] ?? null,
+            'status'      => $data['status'],
+            'due_date'    => $data['due_date'],
+        ]);
 
         $task->logActivity('manager_created', [
             'assigned_to' => $task->user_id,
@@ -99,7 +115,7 @@ class TaskController extends Controller
     }
 
     /**
-     * Update task status
+     * Update task status.
      */
     public function updateStatus(Request $request, Task $task)
     {
@@ -125,19 +141,26 @@ class TaskController extends Controller
     }
 
     /**
-     * Reassign task to another employee
+     * Reassign task to another employee under the same manager.
      */
     public function updateAssignee(Request $request, Task $task)
     {
         $this->ensureTaskBelongsToManager($task);
 
         $data = $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id' => [
+                'required',
+                Rule::exists('users', 'id')->where(function ($query) {
+                    $query->where('role', 'employee')
+                          ->where('manager_id', auth()->id());
+                }),
+            ],
         ]);
 
+        $employee = $this->getManagedEmployeeOrAbort((int) $data['user_id']);
         $before = $task->user_id;
 
-        $task->user_id = $data['user_id'];
+        $task->user_id = $employee->id;
         $task->save();
 
         $task->logActivity('reassigned', [
@@ -151,7 +174,7 @@ class TaskController extends Controller
     }
 
     /**
-     * Approve task
+     * Approve task.
      */
     public function approve(Request $request, Task $task)
     {
@@ -167,10 +190,10 @@ class TaskController extends Controller
 
         if (!empty($data['comment'])) {
             TaskReview::create([
-                'task_id'     => $task->id,
-                'manager_id'  => auth()->id(),
-                'comment'     => $data['comment'],
-                'decision'    => 'approved',
+                'task_id'    => $task->id,
+                'manager_id' => auth()->id(),
+                'comment'    => $data['comment'],
+                'decision'   => 'approved',
             ]);
         }
 
@@ -186,7 +209,7 @@ class TaskController extends Controller
     }
 
     /**
-     * Send task back
+     * Send task back.
      */
     public function sendBack(Request $request, Task $task)
     {
@@ -201,10 +224,10 @@ class TaskController extends Controller
         $task->update(['status' => 'in_progress']);
 
         TaskReview::create([
-            'task_id'     => $task->id,
-            'manager_id'  => auth()->id(),
-            'comment'     => $data['comment'],
-            'decision'    => 'sent_back',
+            'task_id'    => $task->id,
+            'manager_id' => auth()->id(),
+            'comment'    => $data['comment'],
+            'decision'   => 'sent_back',
         ]);
 
         $task->logActivity('sent_back', [
@@ -219,14 +242,31 @@ class TaskController extends Controller
     }
 
     /**
-     * Security check
+     * Ensure the task belongs to an employee managed by the current manager.
      */
     private function ensureTaskBelongsToManager(Task $task): void
     {
         $task->load('user');
 
-        if (!$task->user || $task->user->manager_id !== auth()->id()) {
-            abort(403);
+        if (!$task->user || $task->user->role !== 'employee' || $task->user->manager_id !== auth()->id()) {
+            abort(403, 'Unauthorized task access.');
         }
+    }
+
+    /**
+     * Retrieve an employee under the current manager or abort.
+     */
+    private function getManagedEmployeeOrAbort(int $userId): User
+    {
+        $employee = User::where('id', $userId)
+            ->where('role', 'employee')
+            ->where('manager_id', auth()->id())
+            ->first();
+
+        if (!$employee) {
+            abort(403, 'Unauthorized employee selection.');
+        }
+
+        return $employee;
     }
 }

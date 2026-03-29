@@ -14,22 +14,38 @@
 
                     <div class="mb-4">
                         <label class="block text-sm font-semibold text-blue-100 mb-1">Name</label>
-                        <input type="text" name="name" class="border border-blue-800 bg-blue-950 text-blue-100 rounded-lg w-full px-3 py-2 text-sm focus:border-blue-400 focus:ring focus:ring-blue-500/30 transition" required>
+                        <input type="text" name="name" value="{{ old('name') }}"
+                            class="border border-blue-800 bg-blue-950 text-blue-100 rounded-lg w-full px-3 py-2 text-sm focus:border-blue-400 focus:ring focus:ring-blue-500/30 transition" required>
+                        @error('name')
+                            <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="mb-4">
                         <label class="block text-sm font-semibold text-blue-100 mb-1">Email</label>
-                        <input type="email" name="email" class="border border-blue-800 bg-blue-950 text-blue-100 rounded-lg w-full px-3 py-2 text-sm focus:border-blue-400 focus:ring focus:ring-blue-500/30 transition" required>
+                        <input type="email" name="email" value="{{ old('email') }}"
+                            class="border border-blue-800 bg-blue-950 text-blue-100 rounded-lg w-full px-3 py-2 text-sm focus:border-blue-400 focus:ring focus:ring-blue-500/30 transition" required>
+                        @error('email')
+                            <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="mb-4">
                         <label class="block text-sm font-semibold text-blue-100 mb-1">Employee ID</label>
-                        <input type="text" name="employee_id" class="border border-blue-800 bg-blue-950 text-blue-100 rounded-lg w-full px-3 py-2 text-sm focus:border-blue-400 focus:ring focus:ring-blue-500/30 transition" required>
+                        <input type="text" name="employee_id" value="{{ old('employee_id') }}"
+                            class="border border-blue-800 bg-blue-950 text-blue-100 rounded-lg w-full px-3 py-2 text-sm focus:border-blue-400 focus:ring focus:ring-blue-500/30 transition" required>
+                        @error('employee_id')
+                            <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="mb-4">
                         <label class="block text-sm font-semibold text-blue-100 mb-1">Initial Password</label>
-                        <input type="password" name="password" class="border border-blue-800 bg-blue-950 text-blue-100 rounded-lg w-full px-3 py-2 text-sm focus:border-blue-400 focus:ring focus:ring-blue-500/30 transition" required>
+                        <input type="password" name="password"
+                            class="border border-blue-800 bg-blue-950 text-blue-100 rounded-lg w-full px-3 py-2 text-sm focus:border-blue-400 focus:ring focus:ring-blue-500/30 transition" required>
+                        @error('password')
+                            <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="mt-8 mb-2 flex justify-between items-center gap-4">

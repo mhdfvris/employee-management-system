@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class EmployeeController extends Controller
 {
@@ -49,7 +50,18 @@ class EmployeeController extends Controller
             'name'        => 'required|string|max:255',
             'email'       => 'required|email|unique:users,email',
             'employee_id' => 'required|string|max:255',
-            'password'    => 'required|string|min:6',
+            'password'    => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/[A-Z]/',
+                'regex:/[a-z]/',
+                'regex:/[0-9]/',
+                'regex:/[\W_]/',
+            ],
+        ], [
+            'password.min'   => 'Password must be at least 8 characters.',
+            'password.regex' => 'Password must include uppercase, lowercase, number, and special character.',
         ]);
 
         User::create([
