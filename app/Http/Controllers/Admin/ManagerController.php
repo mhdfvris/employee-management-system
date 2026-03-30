@@ -7,7 +7,9 @@ use App\Models\User;
 use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Password;
+use App\Http\Requests\StoreManagerRequest;
 
 class ManagerController extends Controller
 {
@@ -42,21 +44,9 @@ class ManagerController extends Controller
         return view('admin.managers.create');
     }
 
-    public function store(Request $request)
+    public function store(StoreManagerRequest $request)
     {
-        $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => [
-                'required',
-                'string',
-                Password::min(8)
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols()
-                    ->uncompromised(),
-            ],
-        ]);
+        $data = $request->validated();
 
         User::create([
             'name'        => $data['name'],
@@ -64,6 +54,11 @@ class ManagerController extends Controller
             'password'    => Hash::make($data['password']),
             'role'        => 'manager',
             'employee_id' => null,
+        ]);
+
+        Log::info('Manager created', [
+            'admin_id' => auth()->id(),
+            'manager_email' => $data['email'],
         ]);
 
         return redirect()

@@ -8,6 +8,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\TaskReview;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\StoreTaskRequest;
+use App\Http\Requests\UpdateTaskStatusRequest;
+use App\Http\Requests\UpdateTaskAssigneeRequest;
+
 
 class TaskController extends Controller
 {
@@ -59,21 +63,9 @@ class TaskController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreTaskRequest $request)
     {
-        $data = $request->validate([
-            'user_id' => [
-                'required',
-                Rule::exists('users', 'id')->where(function ($query) {
-                    $query->where('role', 'employee')
-                          ->where('manager_id', auth()->id());
-                }),
-            ],
-            'title'       => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'status'      => 'required|string|in:pending,in_progress,awaiting_review,done,overdue',
-            'due_date'    => 'required|date',
-        ]);
+        $data = $request->validated();
 
         // Extra defensive check
         $employee = $this->getManagedEmployeeOrAbort((int) $data['user_id']);
@@ -117,13 +109,11 @@ class TaskController extends Controller
     /**
      * Update task status.
      */
-    public function updateStatus(Request $request, Task $task)
+    public function updateStatus(UpdateTaskStatusRequest $request, Task $task)
     {
         $this->ensureTaskBelongsToManager($task);
 
-        $data = $request->validate([
-            'status' => 'required|string|in:pending,in_progress,awaiting_review,done,overdue',
-        ]);
+        $data = $request->validated();
 
         $before = $task->status;
 
@@ -143,20 +133,13 @@ class TaskController extends Controller
     /**
      * Reassign task to another employee under the same manager.
      */
-    public function updateAssignee(Request $request, Task $task)
+    public function updateAssignee(UpdateTaskAssigneeRequest $request, Task $task)
     {
         $this->ensureTaskBelongsToManager($task);
 
-        $data = $request->validate([
-            'user_id' => [
-                'required',
-                Rule::exists('users', 'id')->where(function ($query) {
-                    $query->where('role', 'employee')
-                          ->where('manager_id', auth()->id());
-                }),
-            ],
-        ]);
+        $data = $request->validated();
 
+        // Extra defensive check
         $employee = $this->getManagedEmployeeOrAbort((int) $data['user_id']);
         $before = $task->user_id;
 

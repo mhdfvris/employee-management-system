@@ -39,7 +39,8 @@
             </div>
 
             <x-auth-session-status class="mb-4 rounded-xl border border-emerald-800 bg-emerald-950/60 px-4 py-3 text-sm text-emerald-300" :status="session('status')" />
-
+            <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+            
             <form method="POST" action="{{ route('login') }}" x-data="{ showPassword: false }">
                 @csrf
 
@@ -107,6 +108,14 @@
                     <p class="text-sm text-blue-300">
                         Don’t have an account? Please contact your manager or system administrator.
                     </p>
+                </div>
+
+                <div class="mt-5">
+                    <div class="g-recaptcha" data-sitekey="{{ env('RECAPTCHA_SITE_KEY') }}"></div>
+
+                    @error('g-recaptcha-response')
+                        <p class="text-red-400 text-sm mt-2">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div class="mt-6">

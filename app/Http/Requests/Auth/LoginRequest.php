@@ -6,6 +6,7 @@ use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -29,6 +30,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'g-recaptcha-response' => ['required'],
         ];
     }
 
@@ -40,9 +42,15 @@ class LoginRequest extends FormRequest
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
+        $this->verifyRecaptcha();
 
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
+
+            Log::warning('Failed login attempt', [
+                'email' => $this->input('email'),
+                'ip' => $this->ip(),
+            ]);
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
@@ -50,6 +58,11 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        Log::info('User logged in', [
+            'email' => $this->input('email'),
+            'ip' => $this->ip(),
+        ]);
     }
 
     /**
@@ -81,5 +94,22 @@ class LoginRequest extends FormRequest
     public function throttleKey(): string
     {
         return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+    }
+
+    protected function verifyRecaptcha(): void
+    {
+        $response = $this->input('g-recaptcha-response');
+
+        $verify = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret="
+            . env('RECAPTCHA_SECRET_KEY')
+            . "&response=" . $response);
+
+        $captcha_success = json_decode($verify);
+
+        if (!$captcha_success->success) {
+            throw ValidationException::withMessages([
+                'g-recaptcha-response' => 'reCAPTCHA verification failed. Please try again.',
+            ]);
+        }
     }
 }

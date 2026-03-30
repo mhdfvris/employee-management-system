@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use App\Http\Requests\StoreEmployeeRequest;
 
 class EmployeeController extends Controller
 {
@@ -44,25 +46,9 @@ class EmployeeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreEmployeeRequest $request)
     {
-        $data = $request->validate([
-            'name'        => 'required|string|max:255',
-            'email'       => 'required|email|unique:users,email',
-            'employee_id' => 'required|string|max:255',
-            'password'    => [
-                'required',
-                'string',
-                'min:8',
-                'regex:/[A-Z]/',
-                'regex:/[a-z]/',
-                'regex:/[0-9]/',
-                'regex:/[\W_]/',
-            ],
-        ], [
-            'password.min'   => 'Password must be at least 8 characters.',
-            'password.regex' => 'Password must include uppercase, lowercase, number, and special character.',
-        ]);
+        $data = $request->validated();
 
         User::create([
             'name'        => $data['name'],
@@ -71,6 +57,11 @@ class EmployeeController extends Controller
             'password'    => Hash::make($data['password']),
             'role'        => 'employee',
             'manager_id'  => auth()->id(),
+        ]);
+
+        Log::info('Employee created', [
+            'manager_id' => auth()->id(),
+            'employee_email' => $data['email'],
         ]);
 
         return redirect()
@@ -156,6 +147,11 @@ class EmployeeController extends Controller
             $user->role !== 'employee' ||
             $user->manager_id !== auth()->id()
         ) {
+            \Log::warning('Unauthorized employee access attempt', [
+                'user_id' => auth()->id(),
+                'target_employee_id' => $user->id,
+            ]);
+
             abort(403);
         }
     }
