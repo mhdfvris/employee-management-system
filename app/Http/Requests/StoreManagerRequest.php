@@ -15,8 +15,17 @@ class StoreManagerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[A-Za-z\s\.\'-]+$/',
+            ],
+            'email' => [
+                'required',
+                'email',
+                'unique:users,email',
+            ],
             'password' => [
                 'required',
                 'string',
@@ -25,6 +34,13 @@ class StoreManagerRequest extends FormRequest
                     ->numbers()
                     ->symbols(),
             ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.regex' => 'Name may only contain letters, spaces, apostrophes, hyphens, and dots.',
         ];
     }
 }
